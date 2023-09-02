@@ -1,0 +1,51 @@
+name: Build assets
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+
+env:
+  node-version: 18
+
+concurrency:
+  group: Build assets ${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  #############
+  # Build
+  #############
+  build:
+    runs-on: ubuntu-latest
+    name: Build Assets
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Yarn
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node-version }}
+      - name: Cache yarn files
+        uses: actions/cache@v3
+        with:
+          path: .yarn/cache
+          key: ${{ runner.os }}-yarn-v2-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-v2-${{ hashFiles('**/yarn.lock') }}
+            ${{ runner.os }}-yarn-v2-
+
+      - name: Install yarn dependencies
+        run: yarn install --immutable
+      - name: Build assets
+        run: yarn run build
